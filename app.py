@@ -10,7 +10,12 @@ import uuid
 
 
 def main():
-    st.title("Mental Health Chatbot")
+    st.set_page_config(page_title="Mental Health Chatbot", page_icon="💬", layout="wide")
+
+    st.title("Mental Health Companion")
+
+    st.markdown("<style>body {background-color: #282923; color: #c38d9e;}</style>", unsafe_allow_html=True)
+
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
