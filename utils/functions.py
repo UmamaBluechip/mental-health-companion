@@ -12,7 +12,7 @@ import google.generativeai as genai
 def voice_to_text(audio_data, model_name="openai/whisper-small", device="cuda" if torch.cuda.is_available() else "cpu"):
 
   try:
-    pipe = pipeline("automatic-speech-recognition", model=model_name, device=device, chunk_length_s=30)
+    pipe = pipeline("automatic-speech-recognition", model=model_name, device=device, chunk_length_s=50)
 
     lang = 'en'
 

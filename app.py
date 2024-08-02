@@ -6,6 +6,8 @@ import numpy as np
 import soundfile as sf
 from utils.functions import voice_to_text, get_gemini_response, text_to_audio
 import pygame
+import uuid
+
 
 def main():
     st.title("Mental Health Chatbot")
@@ -16,7 +18,7 @@ def main():
     chat_container = st.empty()
 
     if st.button("Speak"):
-        with st.spinner('Running..'):
+        with st.spinner(''):
             try:
                 p = pyaudio.PyAudio()
                 stream = p.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=1024)
@@ -53,12 +55,13 @@ def main():
 
                         speech = text_to_audio(response)
                         print("Audio generated")
-                        bot_audio_file = "bot_audio.wav"
-                        sf.write(bot_audio_file, speech["audio"], samplerate=speech["sampling_rate"])
+                        audio_filename = f"bot_response_{uuid.uuid4()}.wav"
+                        speech = text_to_audio(response)
+                        sf.write(audio_filename, speech["audio"], samplerate=speech["sampling_rate"])
 
-                        with st.spinner('Playing audio...'):
+                        with st.spinner('Chatbot responding...'):
                             pygame.mixer.init()
-                            pygame.mixer.music.load(bot_audio_file)
+                            pygame.mixer.music.load(audio_filename)
                             pygame.mixer.music.play()
                             while pygame.mixer.music.get_busy():
                                 time.sleep(1)
