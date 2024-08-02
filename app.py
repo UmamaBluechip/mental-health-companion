@@ -1,7 +1,7 @@
 import streamlit as st
 import time
-import sounddevice as sd
-from scipy.io.wavfile import write
+import pyaudio
+import wave
 import numpy as np
 import soundfile as sf
 from utils.functions import voice_to_text, get_gemini_response, text_to_audio
@@ -13,39 +13,65 @@ def main():
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
+    chat_container = st.empty()
+
+    if st.button("Speak"):
+        with st.spinner('Running..'):
+            try:
+                p = pyaudio.PyAudio()
+                stream = p.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=1024)
+                frames = []
+
+                for i in range(0, int(5 * 44100 / 1024)):
+                    data = stream.read(1024)
+                    frames.append(data)
+
+                stream.stop_stream()
+                stream.close()
+                p.terminate()
+
+                wf = wave.open("user_audio.wav", 'wb')
+                wf.setnchannels(1)
+                wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
+                wf.setframerate(44100)
+                wf.writeframes(b''.join(frames))
+                wf.close()
+
+                text_input = voice_to_text("user_audio.wav")
+                print("Transcription:", text_input)
+
+                if text_input != "Error during transcription":
+                    st.session_state.messages.append({"role": "user", "content": text_input})
+                    chat_container.markdown(f":speech_balloon: **You:** {text_input}")
+
+                    response = get_gemini_response(text_input)
+                    print("Gemini response:", response)
+
+                    if response:
+                        st.session_state.messages.append({"role": "assistant", "content": response})
+                        chat_container.markdown(f"**Chatbot:** {response}")
+
+                        speech = text_to_audio(response)
+                        print("Audio generated")
+                        bot_audio_file = "bot_audio.wav"
+                        sf.write(bot_audio_file, speech["audio"], samplerate=speech["sampling_rate"])
+
+                        with st.spinner('Playing audio...'):
+                            pygame.mixer.init()
+                            pygame.mixer.music.load(bot_audio_file)
+                            pygame.mixer.music.play()
+                            while pygame.mixer.music.get_busy():
+                                time.sleep(1)
+
+            except Exception as e:
+                st.error(f"Error: {e}")
+
     for message in st.session_state.messages:
         with st.container():
             if message["role"] == "user":
-                st.markdown(f":speech_balloon: **You:** {message['content']}")
+                st.markdown(f"**You:** {message['content']}")
             else:
-                st.markdown(f":robot: **Chatbot:** {message['content']}")
-
-    if st.button("Speak"):
-        with st.spinner('Recording...'):
-            try:
-                fs = 44100
-                seconds = 5
-                myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=1)
-                sd.wait()
-                audio_file = "user_audio.wav"
-                write(audio_file, fs, myrecording)
-
-                text_input = voice_to_text(audio_file)
-                if text_input != "Error during transcription":
-                    st.session_state.messages.append({"role": "user", "content": text_input})
-                    response = get_gemini_response(text_input)
-                    if response:
-                        st.session_state.messages.append({"role": "assistant", "content": response})
-                        audio_array = text_to_audio(response)
-                        bot_audio_file = "bot_audio.wav"
-                        sf.write(bot_audio_file, audio_array, 44100)
-                        pygame.mixer.init()
-                        pygame.mixer.music.load(bot_audio_file)
-                        pygame.mixer.music.play()
-                        while pygame.mixer.music.get_busy():
-                            time.sleep(1)
-            except Exception as e:
-                st.error(f"Error: {e}")
+                st.markdown(f"**Chatbot:** {message['content']}")
 
 if __name__ == "__main__":
     main()

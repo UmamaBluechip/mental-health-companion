@@ -1,5 +1,7 @@
 import torch
-from transformers import pipeline
+from transformers import pipeline, AutoTokenizer
+from parler_tts import ParlerTTSForConditionalGeneration
+from datasets import load_dataset
 import requests
 import json
 import soundfile as sf
@@ -10,8 +12,15 @@ import google.generativeai as genai
 def voice_to_text(audio_data, model_name="openai/whisper-small", device="cuda" if torch.cuda.is_available() else "cpu"):
 
   try:
-    model = pipeline("automatic-speech-recognition", model=model_name, device=device, trust_remote_code=True)
-    text = model(audio_data)["text"]
+    pipe = pipeline("automatic-speech-recognition", model=model_name, device=device, chunk_length_s=30)
+
+    lang = 'en'
+
+    pipe.model.config.forced_decoder_ids = pipe.tokenizer.get_decoder_prompt_ids(language=lang, task="transcribe")
+
+    audio, samplerate = sf.read(audio_data)
+
+    text = pipe(audio)["text"]
     return text
   
   except Exception as e:
@@ -32,8 +41,16 @@ def get_gemini_response(text):
 
 def text_to_audio(text):
 
-  device = "cuda" if torch.cuda.is_available() else "cpu"
-  model = pipeline("text-to-speech", model="parler-tts/parler_tts_mini_v0.1", device=device, trust_remote_code=True)
+  try:
 
-  audio_array = model(text)["audio"]
-  return audio_array
+    synthesiser = pipeline("text-to-speech", "microsoft/speecht5_tts")
+
+    embeddings_dataset = load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")
+    speaker_embedding = torch.tensor(embeddings_dataset[7306]["xvector"]).unsqueeze(0)
+
+    speech = synthesiser(text, forward_params={"speaker_embeddings": speaker_embedding})
+
+    return speech
+  
+  except Exception as e:
+    return f"Error during text 2 audio: {e}"

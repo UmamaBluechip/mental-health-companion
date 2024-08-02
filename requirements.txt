@@ -1,0 +1,10 @@
+streamlit
+transformers
+sounddevice
+soundfile
+pygame
+torch
+numpy
+scipy
+requests
+google.generativeai
