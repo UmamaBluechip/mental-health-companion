@@ -5,6 +5,7 @@ soundfile
 pygame
 torch
 numpy
+pyaudio
 scipy
 requests
 google.generativeai

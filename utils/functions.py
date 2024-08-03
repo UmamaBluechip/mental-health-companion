@@ -4,6 +4,7 @@ from parler_tts import ParlerTTSForConditionalGeneration
 from datasets import load_dataset
 import requests
 import json
+import io
 import soundfile as sf
 import os
 import google.generativeai as genai
@@ -12,15 +13,14 @@ import google.generativeai as genai
 def voice_to_text(audio_data, model_name="openai/whisper-small", device="cuda" if torch.cuda.is_available() else "cpu"):
 
   try:
-    pipe = pipeline("automatic-speech-recognition", model=model_name, device=device, chunk_length_s=50)
+    pipe = pipeline("automatic-speech-recognition", model=model_name, device=device)
 
-    lang = 'en'
-
-    pipe.model.config.forced_decoder_ids = pipe.tokenizer.get_decoder_prompt_ids(language=lang, task="transcribe")
+    pipe.model.config.forced_decoder_ids = pipe.tokenizer.get_decoder_prompt_ids(language='en', task="transcribe")
 
     audio, samplerate = sf.read(audio_data)
 
     text = pipe(audio)["text"]
+
     return text
   
   except Exception as e:
@@ -50,7 +50,9 @@ def text_to_audio(text):
 
     speech = synthesiser(text, forward_params={"speaker_embeddings": speaker_embedding})
 
-    return speech
+    audio_bytes = io.BytesIO(speech['audio'])
+        
+    return audio_bytes.read()
   
   except Exception as e:
     return f"Error during text 2 audio: {e}"
