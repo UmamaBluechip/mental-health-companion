@@ -1,7 +1,6 @@
 import streamlit as st
 import pyaudio
 import wave
-import tempfile
 import os
 import uuid
 from utils.functions import voice_to_text, get_gemini_response, text_to_audio
@@ -55,7 +54,6 @@ def record_audio(duration=5):
     return WAVE_OUTPUT_FILENAME
 
 def main():
-    st.title("Mental Health Voice Chat")
 
     # Initialize chat history
     if 'history' not in st.session_state:
@@ -64,24 +62,68 @@ def main():
     # Include custom CSS for chat bubble styling
     st.markdown("""
     <style>
+    body {
+        background-color: #ffffff;
+        color: #333;
+        font-family: 'Arial', sans-serif;
+    }
     .user-message {
-        background-color: #dcf8c6;
+        background-color: #e6f9f4;
+        color: #333;
+        padding: 10px;
+        border-radius: 15px;
+        margin-bottom: 10px;
+        max-width: 80%;
+        align-self: flex-start;
     }
     .bot-message {
-        background-color: #f1f0f0;
-
+        background-color: #ffffff;
+        color: #333;
+        padding: 10px;
+        border-radius: 15px;
+        margin-bottom: 10px;
+        max-width: 80%;
+        align-self: flex-end;
+        border: 1px solid #e0e0e0;
+    }
+    .audio-player {
+        width: 100%;
     }
     .chat-container {
         display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .record-button {
+        background-color: #2dbd6e;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-bottom: 20px;
+    }
+    .record-button:hover {
+        background-color: #28a864;
+    }
+    .title {
+        color: #2dbd6e;
+        margin-bottom: 20px;
     }
 
+    .chats {
+        color: gray;
+        margin-bottom: 10px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
     # UI Elements
+    st.markdown("<h1 class='title'>Mental Health Voice Chat</h1>", unsafe_allow_html=True)
     st.write("Click 'Record' to start recording your message.")
-    record_button = st.button("Record")
-    
+    record_button = st.button("Record", key="record", help="Start recording your message")
+
     if record_button:
         # Record the audio
         audio_file = record_audio(duration=5)  # Record for 5 seconds
@@ -89,26 +131,26 @@ def main():
             st.session_state.history.append({'type': 'user', 'file': audio_file})
 
             # Display user message
-            st.markdown(f'<div class="user-message"><audio class="audio-player" controls src="{audio_file}"></audio></div>', unsafe_allow_html=True)
-            
+            st.markdown("**User:**")
+            st.audio(audio_file, format='audio/wav')
+
             # Convert voice message to text and get chatbot response
             user_text = voice_to_text(audio_file)
             if user_text:
                 response_text = get_gemini_response(user_text)
                 if response_text:
-                    response_audio = text_to_audio(response_text)
-
-                    # Save response audio to a file
                     response_file = os.path.join(BOT_AUDIO_DIR, f"{uuid.uuid4()}.wav")
-                    try:
-                        with open(response_file, 'wb') as f:
-                            f.write(response_audio)
+                    audio_result = text_to_audio(response_text, response_file)
+
+                    # Check if the audio conversion was successful
+                    if os.path.exists(response_file) and os.path.getsize(response_file) > 0:
                         st.session_state.history.append({'type': 'bot', 'file': response_file})
 
                         # Display bot response
-                        st.markdown(f'<div class="bot-message"><audio class="audio-player" controls src="{response_file}"></audio></div>', unsafe_allow_html=True)
-                    except Exception as e:
-                        st.error(f"Error saving bot response audio file: {e}")
+                        st.markdown("**Bot:**")
+                        st.audio(response_file, format='audio/wav')
+                    else:
+                        st.error(f"Failed to create bot response audio: {audio_result}")
                 else:
                     st.error("Failed to get a response from the chatbot.")
             else:
@@ -117,11 +159,14 @@ def main():
     # Display chat history
     chat_container = st.container()
     with chat_container:
+        st.markdown("<h3 class='history'>Chats</h3>", unsafe_allow_html=True)
         for message in st.session_state.history:
             if message['type'] == 'user':
-                st.markdown(f'<div class="user-message"><audio class="audio-player" controls src="{message["file"]}"></audio></div>', unsafe_allow_html=True)
+                st.markdown("**User:**")
+                st.audio(message["file"], format='audio/wav')
             elif message['type'] == 'bot':
-                st.markdown(f'<div class="bot-message"><audio class="audio-player" controls src="{message["file"]}"></audio></div>', unsafe_allow_html=True)
+                st.markdown("**Bot:**")
+                st.audio(message["file"], format='audio/wav')
 
 if __name__ == "__main__":
     main()
