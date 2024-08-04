@@ -5,6 +5,7 @@ import os
 import uuid
 from utils.functions import voice_to_text, get_gemini_response, text_to_audio
 
+
 USER_AUDIO_DIR = 'user_audio'
 BOT_AUDIO_DIR = 'bot_audio'
 
@@ -128,7 +129,7 @@ def main():
         if audio_file:
             st.session_state.history.append({'type': 'user', 'file': audio_file})
 
-            st.markdown(f'<img src="static/user.jpg" alt="User Profile" style="width:30px; vertical-align:middle; border-radius:50%;"> **User:**', unsafe_allow_html=True)
+            st.markdown('**👤 You:**', unsafe_allow_html=True)
             st.audio(audio_file, format='audio/wav')
 
             user_text = voice_to_text(audio_file)
@@ -141,7 +142,7 @@ def main():
                     if os.path.exists(response_file) and os.path.getsize(response_file) > 0:
                         st.session_state.history.append({'type': 'bot', 'file': response_file})
 
-                        st.markdown(f'<img src="bot.jpg" alt="Bot Profile Pic" style="width:30px; vertical-align:middle; border-radius:50%;"> **Bot:**', unsafe_allow_html=True)
+                        st.markdown('**🤖 Bot:**', unsafe_allow_html=True)
                         st.audio(response_file, format='audio/wav')
                     else:
                         st.error(f"Failed to create bot response audio: {audio_result}")
@@ -155,10 +156,10 @@ def main():
         st.markdown("<h3 class='history'>Chats</h3>", unsafe_allow_html=True)
         for message in st.session_state.history:
             if message['type'] == 'user':
-                st.markdown(f'<img src="user.jpg" alt="User Profile Pic" style="width:30px; vertical-align:middle; border-radius:50%;"> **User:**', unsafe_allow_html=True)
+                st.markdown('**👤 You:**', unsafe_allow_html=True)
                 st.audio(message["file"], format='audio/wav')
             elif message['type'] == 'bot':
-                st.markdown(f'<img src="bot.jpg" alt="Bot Profile Pic" style="width:30px; vertical-align:middle; border-radius:50%;"> **Bot:**', unsafe_allow_html=True)
+                st.markdown('**🤖 Bot:**', unsafe_allow_html=True)
                 st.audio(message["file"], format='audio/wav')
 
 if __name__ == "__main__":
