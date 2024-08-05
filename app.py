@@ -86,7 +86,7 @@ def main():
     audio::-webkit-media-controls-panel,
     audio::-webkit-media-controls-enclosure {
         background-color: #2dbd6e;
-        max-width: 60%;
+        max-width: 70%;
         max-height: 50px;
     }
 
