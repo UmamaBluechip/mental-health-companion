@@ -10,19 +10,27 @@ import os
 import google.generativeai as genai
 
 
-def voice_to_text(audio_data, model_name="openai/whisper-small", device="cuda" if torch.cuda.is_available() else "cpu"):
+def voice_to_text(audio_data):
 
   try:
-    pipe = pipeline("automatic-speech-recognition", model=model_name, device=device)
+     
+     auth_key = os.environ['AUTH_KEY']
+     
+     API_URL = "https://api-inference.huggingface.co/models/openai/whisper-large-v3"
+     headers = {"Authorization": f"Bearer {auth_key}"}
+     
+     def query(audio_data):
+        with open(audio_data, "rb") as f:
+           data = f.read()
+           response = requests.post(API_URL, headers=headers, data=data)
+           return response.json()
+        
+     response = query(audio_data)
 
-    pipe.model.config.forced_decoder_ids = pipe.tokenizer.get_decoder_prompt_ids(language='en', task="transcribe")
+     text = response['text']
 
-    audio, samplerate = sf.read(audio_data)
-
-    text = pipe(audio)["text"]
-
-    return text
-  
+     return text
+        
   except Exception as e:
     return f"Error during transcription"
 

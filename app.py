@@ -133,6 +133,7 @@ def main():
             st.audio(audio_file, format='audio/wav')
 
             user_text = voice_to_text(audio_file)
+            print(user_text)
             if user_text:
                 response_text = get_gemini_response(user_text)
                 if response_text:
